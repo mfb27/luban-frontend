@@ -642,12 +642,13 @@ async function send() {
   } catch (e) {
     setError(e.message || String(e));
     // Keep all messages even on error
-    // Reset send button state
+  } finally {
+    state.isSending = false;
+    // Re-enable form inputs
     els.sendBtn.disabled = false;
     els.prompt.disabled = false;
     els.fileInput.disabled = false;
-  } finally {
-    state.isSending = false;
+    els.prompt.focus();
     renderTopbar();
   }
 }

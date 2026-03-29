@@ -72,38 +72,44 @@
 
         <section class="composer">
           <div class="composer-shell">
-            <label class="upload-btn" aria-label="上传图片或视频">
-              <input id="fileInput" type="file" accept="image/*,video/*" />
-              <svg class="icon-upload" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 3.5v11m0-11L8 7.5m4-4 4 4M5 14.5v3a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 17.5v-3"
-                  fill="none"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </label>
             <textarea
               id="prompt"
               class="textarea"
-              rows="2"
+              rows="3"
               placeholder="发送消息，Enter 发送，Shift+Enter 换行"
             ></textarea>
-            <button id="sendBtn" class="icon-btn send-btn" type="button" aria-label="发送">
-              <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 19V5M12 5l6 6M12 5l-6 6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
+            <div class="composer-actions">
+              <div class="composer-actions-left">
+                <label class="upload-btn" aria-label="上传图片或视频">
+                  <input id="fileInput" type="file" accept="image/*,video/*" />
+                  <svg class="icon-upload" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 3.5v11m0-11L8 7.5m4-4 4 4M5 14.5v3a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 17.5v-3"
+                      fill="none"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </label>
+              </div>
+              <div class="composer-actions-right">
+                <div id="attachments" class="attachments"></div>
+                <button id="sendBtn" class="icon-btn send-btn" type="button" aria-label="发送">
+                  <svg class="icon-send" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="M12 19V5M12 5l6 6M12 5l-6 6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
-          <div id="attachments" class="attachments"></div>
           <div id="errorBar" class="error-bar hidden"></div>
         </section>
       </main>

@@ -426,9 +426,8 @@ body {
   transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Sidebar hover effect - lift up */
+/* Sidebar hover effect - glow only (no translateY to avoid jitter) */
 .sidebar:hover {
-  transform: translateY(-2px);
   box-shadow: 0 12px 24px var(--glass-shadow-glow);
 }
 
@@ -794,7 +793,7 @@ body {
   max-width: min(760px, 92%);
   padding: 14px 18px;
   border-radius: 18px;
-  border: none;
+  border: 1.5px solid rgba(148, 163, 184, 0.4);
   white-space: pre-wrap;
   line-height: 1.5;
   font-size: 15px;
@@ -819,6 +818,7 @@ body {
   color: var(--bubble-user-text);
   margin-left: auto;
   border-radius: 18px 18px 4px 18px;
+  border-color: rgba(99, 102, 241, 0.6);
 }
 
 .msg.assistant .bubble {
@@ -826,6 +826,7 @@ body {
   color: var(--bubble-assistant-text);
   margin-right: auto;
   border-radius: 18px 18px 18px 4px;
+  border-color: rgba(148, 163, 184, 0.5);
 }
 
 .msg.user .bubble:hover,
@@ -842,7 +843,6 @@ body {
     rgba(255, 255, 255, 0),
     rgba(255, 255, 255, 0.1)
   );
-  border-top: 1px solid var(--glass-border);
   padding: 12px 18px 14px;
 }
 
@@ -859,12 +859,13 @@ html[data-theme="dark"] .composer {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   border-radius: 18px;
   border: 1px solid var(--glass-border);
-  padding: 6px 8px 6px 6px;
+  padding: 12px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  max-width: 680px;
+  margin: 0 auto;
 }
 
 .composer-shell:focus-within {
@@ -884,33 +885,58 @@ html[data-theme="dark"] .composer {
 
 .textarea {
   width: 100%;
-  border-radius: 16px;
+  flex: 1;
   border: none;
-  padding: 8px 4px;
+  border-radius: 0;
+  padding: 6px 4px;
   background: transparent;
   color: var(--text-primary);
   resize: none;
   outline: none;
-  min-height: 44px;
+  min-height: 60px;
   font-family: inherit;
   font-size: 15px;
   line-height: 1.5;
+  pointer-events: auto;
 }
 
 .textarea::placeholder {
   color: var(--text-muted);
 }
 
-/* Remove default outline on textarea to use composer-shell focus state */
+/* Remove all textarea focus visuals — rely on composer-shell focus-within */
 .textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Composer actions row */
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.composer-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.composer-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .select {
@@ -975,6 +1001,18 @@ html[data-theme="dark"] .btn.primary:hover:not(:disabled) {
   background: var(--primary-2);
 }
 
+html[data-theme="dark"] .bubble {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html[data-theme="dark"] .msg.user .bubble {
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+html[data-theme="dark"] .msg.assistant .bubble {
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
 html[data-theme="dark"] .send-btn {
   background: var(--primary);
   color: var(--bg-primary);
@@ -1003,15 +1041,24 @@ html[data-theme="dark"] .send-btn:disabled {
 }
 
 .upload-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
   cursor: pointer;
   user-select: none;
   display: grid;
   place-items: center;
-  background: transparent;
+  transition: all var(--transition-fast);
+}
+.upload-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  transform: scale(1.05);
+}
+.upload-btn:active {
+  transform: scale(0.95);
 }
 .upload-btn input {
   display: none;
@@ -1024,15 +1071,14 @@ html[data-theme="dark"] .send-btn:disabled {
 
 .attachments {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  min-height: 28px;
-  margin-top: 8px;
+  align-items: center;
 }
 .att {
   font-size: 12px;
   border: 1px solid var(--border);
-  padding: 6px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
   background: var(--bg-elevated);
 }
@@ -1102,13 +1148,19 @@ html[data-theme="dark"] .send-btn:disabled {
 
 .dialog {
   width: min(520px, 92vw);
-  border: 1px solid var(--border);
+  border: none;
+  outline: none;
   border-radius: 16px;
   padding: 0;
-  background: var(--bg-elevated);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(var(--glass-blur-heavy));
   color: var(--text-primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: none;
   animation: dialogFadeIn var(--transition-base);
+}
+
+html[data-theme="dark"] .dialog {
+  background: rgba(30, 41, 59, 0.95);
 }
 
 @keyframes dialogFadeIn {
