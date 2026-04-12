@@ -600,7 +600,7 @@ body {
   top: 50%;
   transform: translate(-50%, -50%);
   width: calc(100% - 36px);
-  max-width: 800px;
+  max-width: 900px !important;
   border: none;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -864,7 +864,7 @@ html[data-theme="dark"] .composer {
   border: 1px solid var(--glass-border);
   padding: 12px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-  max-width: 680px;
+  max-width: 900px !important;
   margin: 0 auto;
 }
 
