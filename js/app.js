@@ -27,6 +27,7 @@ const els = {
   fileInput: document.getElementById("fileInput"),
   attachments: document.getElementById("attachments"),
   logoutBtn: document.getElementById("logoutBtn"),
+  dialogOverlay: document.getElementById("dialogOverlay"),
 };
 
 const state = {
@@ -497,7 +498,7 @@ async function selectSession(sessionId) {
 async function newChat() {
   // Check if user is authenticated
   if (!state.isAuthenticated) {
-    els.authDialog.showModal();
+    els.authDialog.show(); els.dialogOverlay.classList.remove('hidden');
     return;
   }
 
@@ -513,7 +514,7 @@ async function newChat() {
 async function send() {
   // Check if user is authenticated
   if (!state.isAuthenticated) {
-    els.authDialog.showModal();
+    els.authDialog.show(); els.dialogOverlay.classList.remove('hidden');
     return;
   }
 
@@ -729,17 +730,20 @@ function bindEvents() {
 
   // Auth events
   els.meBtn.addEventListener("click", () => {
+    // Close any open dialog first
+    els.authDialog.close();
+    els.meDialog.close();
     if (state.isAuthenticated) {
-      els.meDialog.showModal();
+      els.meDialog.show(); els.dialogOverlay.classList.remove('hidden');
     } else {
-      els.authDialog.showModal();
+      els.authDialog.show(); els.dialogOverlay.classList.remove('hidden');
       setTimeout(() => {
         els.loginEmail.focus();
       }, 100);
     }
   });
-  els.authClose.addEventListener("click", () => els.authDialog.close());
-  els.meClose.addEventListener("click", () => els.meDialog.close());
+  els.authClose.addEventListener("click", () => { els.authDialog.close(); els.dialogOverlay.classList.add('hidden'); });
+  els.meClose.addEventListener("click", () => { els.meDialog.close(); els.dialogOverlay.classList.add('hidden'); });
 
   els.loginForm.addEventListener("submit", handleLogin);
   els.registerForm.addEventListener("submit", handleRegister);
@@ -841,11 +845,6 @@ async function boot() {
     // Check authentication and load user data
     await checkAuth();
 
-    if (state.isAuthenticated && state.me && state.me.name) {
-      // Update greeting with user name
-      greeting.textContent = `你好，${state.me.name}`;
-    }
-
     // Load sessions if authenticated
     if (state.isAuthenticated) {
       await loadSessions();
@@ -877,15 +876,10 @@ function handleLogin(e) {
       };
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
-      els.authDialog.close();
+      els.dialogOverlay.classList.add('hidden');
       // Update avatar to default
       els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
       updateUIAfterAuth();
-      // Update greeting
-      const greeting = els.messages.querySelector(".greeting");
-      if (greeting && state.me.name) {
-        greeting.textContent = `你好，${state.me.name}`;
-      }
     })
     .catch(err => {
       // 错误已经在api函数中处理并显示在页面上
@@ -952,15 +946,10 @@ function handleRegister(e) {
       };
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
-      els.authDialog.close();
+      els.dialogOverlay.classList.add('hidden');
       // Update avatar to default
       els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
       updateUIAfterAuth();
-      // Update greeting
-      const greeting = els.messages.querySelector(".greeting");
-      if (greeting && state.me.name) {
-        greeting.textContent = `你好，${state.me.name}`;
-      }
     })
     .catch(err => {
       // 错误已经在api函数中处理并显示在页面上
@@ -1044,11 +1033,6 @@ async function checkAuth() {
       if (res.id) {
         state.me = res;
         state.isAuthenticated = true;
-        // Update greeting with user name if available
-        const greeting = els.messages.querySelector(".greeting");
-        if (greeting && res.name) {
-          greeting.textContent = `你好，${res.name}`;
-        }
         updateUIAfterAuth();
       } else {
         localStorage.removeItem("token");
@@ -1080,7 +1064,7 @@ function logout() {
   state.currentSessionId = "";
 
   // Reset UI
-  els.meDialog.close();
+  els.dialogOverlay.classList.add('hidden');
   els.meName.textContent = "登录/注册";
   els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
   els.sessionsList.innerHTML = "";
