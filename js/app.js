@@ -544,10 +544,27 @@ async function send() {
 
     const bubble = document.createElement("div");
     bubble.className = "bubble";
-    bubble.textContent = "";
+
+    // Add typing indicator
+    const typingIndicator = document.createElement("div");
+    typingIndicator.className = "typing-indicator";
+    typingIndicator.innerHTML = `
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    `;
+    bubble.appendChild(typingIndicator);
 
     assistantContainer.appendChild(bubble);
     els.messages.appendChild(assistantContainer);
+
+    // Smooth scroll to show typing indicator
+    requestAnimationFrame(() => {
+      els.messages.scrollTo({
+        top: els.messages.scrollHeight,
+        behavior: 'smooth'
+      });
+    });
 
     // Prepare request body
     const reqBody = JSON.stringify({
@@ -608,6 +625,11 @@ async function send() {
               break;
 
             case "content":
+              // Remove typing indicator if it exists
+              const typingIndicator = bubble.querySelector('.typing-indicator');
+              if (typingIndicator) {
+                typingIndicator.remove();
+              }
               // Append content to assistant bubble
               bubble.textContent += event.data;
               // Smooth scroll to bottom

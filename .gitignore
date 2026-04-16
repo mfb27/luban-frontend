@@ -1,3 +1,5 @@
 .env.local
 .vscode/
 .claude/
+.playwright-mcp/
+sidebar-display.png
