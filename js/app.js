@@ -3,6 +3,7 @@ const els = {
   modelSelect: document.getElementById("modelSelect"),
   newChatBtn: document.getElementById("newChatBtn"),
   themeToggle: document.getElementById("themeToggle"),
+  sidebarToggle: document.getElementById("sidebarToggle"),
   meBtn: document.getElementById("meBtn"),
   meDialog: document.getElementById("meDialog"),
   meClose: document.getElementById("meClose"),
@@ -28,6 +29,8 @@ const els = {
   attachments: document.getElementById("attachments"),
   logoutBtn: document.getElementById("logoutBtn"),
   dialogOverlay: document.getElementById("dialogOverlay"),
+  sidebar: document.querySelector(".sidebar"),
+  main: document.querySelector(".main"),
 };
 
 const state = {
@@ -40,6 +43,7 @@ const state = {
   theme: localStorage.getItem("theme") || "light",
   isSending: false,
   isAuthenticated: false,
+  isSidebarVisible: true, // 默认显示侧边栏
 };
 
 // 错误类型枚举
@@ -190,6 +194,42 @@ function setTheme(theme) {
   state.theme = theme;
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("theme", theme);
+}
+
+// 切换侧边栏显示状态
+function toggleSidebar() {
+  state.isSidebarVisible = !state.isSidebarVisible;
+
+  if (state.isSidebarVisible) {
+    els.sidebar.style.display = "flex";
+    els.sidebarToggle.innerHTML = `
+      <svg class="icon-menu" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M3 12h18M3 6h18M3 18h18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    `;
+  } else {
+    els.sidebar.style.display = "none";
+    els.sidebarToggle.innerHTML = `
+      <svg class="icon-menu" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M3 12h18M3 6h18M3 18h18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    `;
+  }
+
+  // 保存侧边栏状态到本地存储
+  localStorage.setItem("sidebarVisible", state.isSidebarVisible);
 }
 
 // API base URL detection
@@ -750,6 +790,8 @@ function bindEvents() {
     setTheme(state.theme === "dark" ? "light" : "dark");
   });
 
+  els.sidebarToggle.addEventListener("click", toggleSidebar);
+
   // Auth events
   els.meBtn.addEventListener("click", () => {
     // Close any open dialog first
@@ -849,6 +891,18 @@ function bindEvents() {
 
 async function boot() {
   setTheme(state.theme);
+
+  // 初始化侧边栏状态
+  const savedSidebarState = localStorage.getItem("sidebarVisible");
+  if (savedSidebarState !== null) {
+    state.isSidebarVisible = savedSidebarState === "true";
+  }
+
+  // 根据保存的状态设置侧边栏显示
+  if (!state.isSidebarVisible) {
+    els.sidebar.style.display = "none";
+  }
+
   bindEvents();
 
   // Initialize empty state
