@@ -360,17 +360,17 @@ async function loadMe() {
     const me = await api("/api/user/me");
     state.me = me;
     state.isAuthenticated = true;
-    // Always use default avatar
-    els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+    // Use local default avatar
+    els.meAvatar.src = "images/luban1.jpeg";
     els.meName.textContent = me.name;
-    els.meAvatar2.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+    els.meAvatar2.src = "images/luban1.jpeg";
     els.meName2.textContent = me.name;
     els.meId.textContent = `ID: ${me.id}`;
   } catch (err) {
     // User not authenticated
     state.me = null;
     state.isAuthenticated = false;
-    els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+    els.meAvatar.src = "images/luban1.jpeg";
     els.meName.textContent = "登录/注册";
   }
 }
@@ -953,8 +953,8 @@ function handleLogin(e) {
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
       els.dialogOverlay.classList.add('hidden');
-      // Update avatar to default
-      els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+      // Update avatar to local default
+      els.meAvatar.src = "images/luban1.jpeg";
       updateUIAfterAuth();
     })
     .catch(err => {
@@ -1023,8 +1023,8 @@ function handleRegister(e) {
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
       els.dialogOverlay.classList.add('hidden');
-      // Update avatar to default
-      els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+      // Update avatar to local default
+      els.meAvatar.src = "images/luban1.jpeg";
       updateUIAfterAuth();
     })
     .catch(err => {
@@ -1057,11 +1057,11 @@ function switchAuthTab(tab) {
 async function updateUIAfterAuth() {
   // Update user info in UI
   els.meName.textContent = state.me.name;
-  // Always use default avatar for now
-  els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+  // Use local default avatar
+  els.meAvatar.src = "images/luban1.jpeg";
 
   // Update sidebar
-  document.querySelector('.me-sub').textContent = '个人信息';
+  // document.querySelector('.me-sub').textContent = '个人信息';
 
   // Load user data and sessions
   try {
@@ -1084,9 +1084,9 @@ function fetchUserProfile() {
       if (res.id) {
         state.me = res;
         els.meName.textContent = res.name;
-        els.meAvatar.src = res.avatar_url || "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+        els.meAvatar.src = res.avatar_url || "images/luban1.jpeg";
         els.meName2.textContent = res.name;
-        els.meAvatar2.src = res.avatar_url || "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+        els.meAvatar2.src = res.avatar_url || "images/luban1.jpeg";
         els.meId.textContent = `ID: ${res.id}`;
       }
     })
@@ -1114,20 +1114,20 @@ async function checkAuth() {
         localStorage.removeItem("token");
         state.isAuthenticated = false;
         els.meName.textContent = "登录/注册";
-        els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+        els.meAvatar.src = "images/luban1.jpeg";
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       localStorage.removeItem("token");
       state.isAuthenticated = false;
       els.meName.textContent = "登录/注册";
-      els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+      els.meAvatar.src = "images/luban1.jpeg";
     }
   } else {
     // No token, not authenticated
     state.isAuthenticated = false;
     els.meName.textContent = "登录/注册";
-    // Avatar already has default src from HTML
+    // Avatar already has local default src from HTML
   }
 }
 
@@ -1142,7 +1142,7 @@ function logout() {
   // Reset UI
   els.dialogOverlay.classList.add('hidden');
   els.meName.textContent = "登录/注册";
-  els.meAvatar.src = "https://img.alicdn.com/imgextra/i3/O1CN01QLt9r31b7x4MN6qUL_!!6000000003419-2-tps-116-116.png";
+  els.meAvatar.src = "images/luban1.jpeg";
   els.sessionsList.innerHTML = "";
 
   // Clear messages and show greeting
