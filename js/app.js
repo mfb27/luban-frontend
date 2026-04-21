@@ -953,8 +953,8 @@ function handleLogin(e) {
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
       els.dialogOverlay.classList.add('hidden');
-      // Update avatar to local default
-      els.meAvatar.src = "images/luban1.jpeg";
+      // Show avatar after login
+      els.meAvatar.classList.remove('hidden');
       updateUIAfterAuth();
     })
     .catch(err => {
@@ -1023,8 +1023,8 @@ function handleRegister(e) {
       state.isAuthenticated = true;
       localStorage.setItem("token", res.token);
       els.dialogOverlay.classList.add('hidden');
-      // Update avatar to local default
-      els.meAvatar.src = "images/luban1.jpeg";
+      // Show avatar after login
+      els.meAvatar.classList.remove('hidden');
       updateUIAfterAuth();
     })
     .catch(err => {
@@ -1109,19 +1109,20 @@ async function checkAuth() {
       if (res.id) {
         state.me = res;
         state.isAuthenticated = true;
+        els.meAvatar.classList.remove('hidden');
         updateUIAfterAuth();
       } else {
         localStorage.removeItem("token");
         state.isAuthenticated = false;
         els.meName.textContent = "登录/注册";
-        els.meAvatar.src = "images/luban1.jpeg";
+        els.meAvatar.classList.add('hidden');
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       localStorage.removeItem("token");
       state.isAuthenticated = false;
       els.meName.textContent = "登录/注册";
-      els.meAvatar.src = "images/luban1.jpeg";
+      els.meAvatar.classList.add('hidden');
     }
   } else {
     // No token, not authenticated
@@ -1142,7 +1143,7 @@ function logout() {
   // Reset UI
   els.dialogOverlay.classList.add('hidden');
   els.meName.textContent = "登录/注册";
-  els.meAvatar.src = "images/luban1.jpeg";
+  els.meAvatar.classList.add('hidden');
   els.sessionsList.innerHTML = "";
 
   // Clear messages and show greeting

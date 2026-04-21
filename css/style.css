@@ -635,6 +635,9 @@ body {
   object-fit: cover;
   background: var(--border);
 }
+.me-avatar.hidden {
+  display: none;
+}
 .me-name {
   font-weight: 700;
   font-size: 13px;
