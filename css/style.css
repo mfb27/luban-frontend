@@ -1328,6 +1328,11 @@ html[data-theme="dark"] .send-btn:disabled {
   background: rgba(251, 191, 36, 0.08);
   color: var(--warning-dark, #d97706);
 }
+
+.error-bar.error-limit {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
 .hidden {
   display: none;
 }

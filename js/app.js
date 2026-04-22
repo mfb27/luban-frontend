@@ -52,6 +52,7 @@ const ErrorType = {
   AUTH: 'auth',
   VALIDATION: 'validation',
   SERVER: 'server',
+  LIMIT: 'limit',
   DEFAULT: 'default'
 };
 
@@ -85,6 +86,10 @@ const ErrorMessages = {
     database: '数据库错误',
     upload: '上传失败',
     notFound: '资源不存在'
+  },
+  // 限额错误
+  LIMIT: {
+    daily: '今日对话次数已达上限，请明天再来'
   }
 };
 
@@ -96,7 +101,7 @@ function setError(msg, type = ErrorType.DEFAULT, duration = 5000) {
   }
 
   // 移除旧的错误类型
-  els.errorBar.classList.remove('error-toast', 'error-network', 'error-auth', 'error-validation');
+  els.errorBar.classList.remove('error-toast', 'error-network', 'error-auth', 'error-validation', 'error-limit');
 
   // 设置错误消息
   els.errorBar.textContent = msg;
@@ -108,7 +113,7 @@ function setError(msg, type = ErrorType.DEFAULT, duration = 5000) {
   }
 
   // 如果是toast类型，添加固定定位样式
-  if (type === ErrorType.NETWORK || type === ErrorType.AUTH) {
+  if (type === ErrorType.NETWORK || type === ErrorType.AUTH || type === ErrorType.LIMIT) {
     els.errorBar.classList.add('error-toast');
   }
 
@@ -124,7 +129,7 @@ function setError(msg, type = ErrorType.DEFAULT, duration = 5000) {
 // 隐藏错误提示
 function hideError() {
   els.errorBar.classList.add("hidden");
-  els.errorBar.classList.remove('error-toast', 'error-network', 'error-auth', 'error-validation');
+  els.errorBar.classList.remove('error-toast', 'error-network', 'error-auth', 'error-validation', 'error-limit');
   clearTimeout(window.errorTimeout);
 }
 
@@ -291,6 +296,10 @@ async function api(path, options = {}) {
 
     // Consider 2xx status codes as successful
     if (res.status >= 200 && res.status < 300) {
+      // Check for daily limit error code in successful response
+      if (body && body.code === 40000000) {
+        throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: body.code };
+      }
       // Extract data from APIResponse structure if present
       if (body && body.data !== undefined) {
         return body.data;
@@ -635,6 +644,16 @@ async function send() {
       throw new Error(errorText || `HTTP ${response.status}`);
     }
 
+    // Handle non-streaming JSON responses (e.g. daily limit error)
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json") && !contentType.includes("text/event-stream")) {
+      const body = await response.json();
+      if (body && body.code === 40000000) {
+        throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: body.code };
+      }
+      throw new Error(body?.message || body?.error || "Unknown error");
+    }
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
@@ -687,6 +706,9 @@ async function send() {
               break;
 
             case "error":
+              if (event.code === 40000000) {
+                throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: event.code };
+              }
               throw new Error(event.error || "Unknown error");
           }
         } catch (e) {
@@ -703,7 +725,11 @@ async function send() {
     state.attachmentURLs = [];
     renderAttachments();
   } catch (e) {
-    setError(e.message || String(e));
+    if (e.name === 'LimitError') {
+      setError(e.message, ErrorType.LIMIT, 8000);
+    } else {
+      setError(e.message || String(e));
+    }
     // Keep all messages even on error
   } finally {
     state.isSending = false;
