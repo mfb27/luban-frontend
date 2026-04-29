@@ -31,6 +31,8 @@ const els = {
   dialogOverlay: document.getElementById("dialogOverlay"),
   sidebar: document.querySelector(".sidebar"),
   main: document.querySelector(".main"),
+  githubLoginBtn: document.getElementById("githubLoginBtn"),
+  githubRegisterBtn: document.getElementById("githubRegisterBtn"),
 };
 
 const state = {
@@ -838,6 +840,14 @@ function bindEvents() {
   els.loginForm.addEventListener("submit", handleLogin);
   els.registerForm.addEventListener("submit", handleRegister);
 
+  // GitHub login buttons
+  if (els.githubLoginBtn) {
+    els.githubLoginBtn.addEventListener("click", handleGitHubLogin);
+  }
+  if (els.githubRegisterBtn) {
+    els.githubRegisterBtn.addEventListener("click", handleGitHubLogin);
+  }
+
   // Tab switching
   document.querySelectorAll(".auth-tab").forEach(tab => {
     tab.addEventListener("click", () => switchAuthTab(tab.dataset.tab));
@@ -931,6 +941,9 @@ async function boot() {
 
   bindEvents();
 
+  // Check for OAuth callback (redirect flow)
+  checkOAuthCallback();
+
   // Initialize empty state
   els.messages.parentElement.classList.add("empty");
 
@@ -988,6 +1001,112 @@ function handleLogin(e) {
       // 不要关闭对话框，让用户看到错误
       console.error("Login error:", err);
     });
+}
+
+// GitHub OAuth login handler
+let githubOAuthWindow = null;
+
+function handleGitHubLogin(e) {
+  e.preventDefault();
+
+  // Get the GitHub OAuth authorization URL from backend
+  api("/api/auth/github")
+    .then(res => {
+      if (!res.auth_url) {
+        setError("GitHub OAuth 未配置");
+        return;
+      }
+
+      // Open OAuth popup window
+      const width = 600;
+      const height = 700;
+      const left = window.innerWidth / 2 - width / 2;
+      const top = window.innerHeight / 2 - height / 2;
+
+      githubOAuthWindow = window.open(
+        res.auth_url,
+        "GitHubOAuth",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+
+      // Listen for OAuth callback message
+      window.addEventListener("message", handleOAuthCallback);
+
+      // Also check if window was closed without completing OAuth
+      const checkClosed = setInterval(() => {
+        if (githubOAuthWindow && githubOAuthWindow.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener("message", handleOAuthCallback);
+        }
+      }, 500);
+    })
+    .catch(err => {
+      console.error("Failed to initiate GitHub OAuth:", err);
+      setError("无法启动 GitHub 登录，请稍后重试");
+    });
+}
+
+// Handle OAuth callback from popup
+function handleOAuthCallback(event) {
+  // Accept messages from any origin since we're using a popup
+  // The important security check is the message type, not the origin
+  if (!event.data || event.data.type !== "github_oauth_result") {
+    return;
+  }
+
+  window.removeEventListener("message", handleOAuthCallback);
+
+  if (githubOAuthWindow) {
+    githubOAuthWindow.close();
+    githubOAuthWindow = null;
+  }
+
+  if (event.data.success) {
+    // OAuth successful - save token and update UI
+    state.me = {
+      id: event.data.user_id,
+      name: event.data.name,
+      email: event.data.email
+    };
+    state.isAuthenticated = true;
+    localStorage.setItem("token", event.data.token);
+    els.dialogOverlay.classList.add('hidden');
+    els.meAvatar.classList.remove('hidden');
+    updateUIAfterAuth();
+  } else {
+    // OAuth failed
+    setError(event.data.error || "GitHub 登录失败");
+  }
+}
+
+// Check for OAuth callback on page load (redirect flow)
+function checkOAuthCallback() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get("token");
+  const userId = urlParams.get("user_id");
+  const name = urlParams.get("name");
+  const error = urlParams.get("error");
+
+  if (token && userId) {
+    // OAuth redirect callback - save token
+    state.me = {
+      id: userId,
+      name: name || "GitHub User"
+    };
+    state.isAuthenticated = true;
+    localStorage.setItem("token", token);
+
+    // Clear URL parameters
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Update UI
+    els.meAvatar.classList.remove('hidden');
+    updateUIAfterAuth();
+  } else if (error) {
+    // OAuth error
+    setError(error);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 }
 
 function checkPasswordStrength(password) {

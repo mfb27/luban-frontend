@@ -1659,3 +1659,60 @@ html[data-theme="dark"] .dialog {
   }
 }
 
+/* GitHub Login Button */
+.github-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #24292e;
+  color: #fff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  min-height: 44px;
+  width: 100%;
+}
+
+.github-btn:hover {
+  background: #1a1e22;
+  transform: translateY(-1px);
+}
+
+html[data-theme="dark"] .github-btn {
+  background: #444d56;
+}
+
+html[data-theme="dark"] .github-btn:hover {
+  background: #2f363d;
+}
+
+.github-btn .icon-github {
+  flex-shrink: 0;
+}
+
+/* Auth Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-divider span {
+  padding: 0 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
