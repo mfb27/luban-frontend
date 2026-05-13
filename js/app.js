@@ -279,6 +279,11 @@ async function api(path, options = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  // Also add Authorization header for OpenAI API routes
+  if (token && path.startsWith("/v1/")) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const url = API_BASE_URL + path;
 
   // 创建AbortController用于超时控制
@@ -298,9 +303,16 @@ async function api(path, options = {}) {
 
     // Consider 2xx status codes as successful
     if (res.status >= 200 && res.status < 300) {
-      // Check for daily limit error code in successful response
-      if (body && body.code === 40000000) {
-        throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: body.code };
+      // Check for error codes in response body (backend may return 200 with error code)
+      if (body && body.code !== undefined && body.code !== 0) {
+        // Non-zero code indicates an error
+        if (body.code === 40000000) {
+          throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: body.code };
+        }
+        const err = new Error(body.message || '请求失败');
+        err.name = 'APIError';
+        err.code = body.code;
+        throw err;
       }
       // Extract data from APIResponse structure if present
       if (body && body.data !== undefined) {
@@ -387,17 +399,18 @@ async function loadMe() {
 }
 
 async function loadModels() {
-  const models = await api("/api/models");
+  const response = await api("/v1/models");
+  const models = Array.isArray(response) ? response : (response.data || []);
   state.models = models;
   els.modelSelect.innerHTML = "";
   for (const m of models) {
     const opt = document.createElement("option");
-    opt.value = m.model_id;  // Use model_id instead of id for the actual model identifier
-    opt.textContent = m.name;
+    opt.value = m.id;
+    opt.textContent = m.id;  // Use model ID as display name
     els.modelSelect.appendChild(opt);
   }
   if (!state.currentModelId && models.length) {
-    state.currentModelId = models[0].model_id;  // Use model_id instead of id
+    state.currentModelId = models[0].id;
     els.modelSelect.value = state.currentModelId;
   }
   renderTopbar();
@@ -617,25 +630,36 @@ async function send() {
       });
     });
 
-    // Prepare request body
+    // Load message history for context
+    let historyMessages = [];
+    if (state.currentSessionId) {
+      try {
+        const messages = await api(`/api/sessions/${state.currentSessionId}/messages`);
+        historyMessages = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+      } catch (e) {
+        console.warn("Failed to load message history:", e);
+      }
+    }
+
+    // Prepare request body in OpenAI format
     const reqBody = JSON.stringify({
-      session_id: state.currentSessionId,
-      content,
-      model_id: modelId,
-      attachment_urls: state.attachmentURLs,
+      model: modelId,
+      messages: [...historyMessages, { role: "user", content }],
+      stream: true,
+      session_id: state.currentSessionId || undefined
     });
 
-    // Call streaming API directly - need to handle response manually for SSE
+    // Call OpenAI-compatible streaming API
     const token = localStorage.getItem("token");
     const headers = {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
     };
 
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-
-    const response = await fetch(API_BASE_URL + "/api/chat", {
+    const response = await fetch(API_BASE_URL + "/v1/chat/completions", {
       method: "POST",
       headers,
       body: reqBody,
@@ -669,56 +693,71 @@ async function send() {
       buffer = lines.pop() || ""; // Keep incomplete line in buffer
 
       for (const line of lines) {
-        if (!line.trim() || !line.startsWith("data:")) continue;
+        if (!line.trim()) continue;
 
-        const data = line.slice(5).trim();
-        if (!data) continue;
+        // Handle OpenAI SSE format
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
 
-        try {
-          const event = JSON.parse(data);
-
-          switch (event.type) {
-            case "session":
-              // Update session ID only if it's not already set
-              if (!state.currentSessionId) {
-                state.currentSessionId = event.session_id;
+          // Check for done marker
+          if (data === "[DONE]" || data.startsWith("[DONE]")) {
+            // Extract session_id from done marker if present
+            try {
+              const donePart = data.slice(6).trim();
+              if (donePart && donePart.startsWith("{")) {
+                const doneData = JSON.parse(donePart);
+                if (doneData.session_id) {
+                  state.currentSessionId = doneData.session_id;
+                }
               }
-              break;
+            } catch (e) {
+              // Ignore parse errors for done marker
+            }
+            // Update session list
+            await loadSessions();
+            break;
+          }
 
-            case "content":
-              // Remove typing indicator if it exists
-              const typingIndicator = bubble.querySelector('.typing-indicator');
-              if (typingIndicator) {
-                typingIndicator.remove();
-              }
-              // Append content to assistant bubble
-              bubble.textContent += event.data;
-              // Smooth scroll to bottom
-              requestAnimationFrame(() => {
-                els.messages.scrollTo({
-                  top: els.messages.scrollHeight,
-                  behavior: 'smooth'
+          try {
+            const chunk = JSON.parse(data);
+
+            // Handle choices
+            if (chunk.choices && chunk.choices.length > 0) {
+              const choice = chunk.choices[0];
+
+              // Handle streaming delta
+              if (choice.delta && choice.delta.content) {
+                // Remove typing indicator if it exists
+                const typingIndicator = bubble.querySelector('.typing-indicator');
+                if (typingIndicator) {
+                  typingIndicator.remove();
+                }
+                // Append content to assistant bubble
+                bubble.textContent += choice.delta.content;
+                // Smooth scroll to bottom
+                requestAnimationFrame(() => {
+                  els.messages.scrollTo({
+                    top: els.messages.scrollHeight,
+                    behavior: 'smooth'
+                  });
                 });
-              });
-              break;
-
-            case "done":
-              // Update session list
-              await loadSessions();
-              break;
-
-            case "error":
-              if (event.code === 40000000) {
-                throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: event.code };
               }
-              throw new Error(event.error || "Unknown error");
+            }
+
+            // Handle errors
+            if (chunk.error) {
+              if (chunk.error.type === "server_error" && chunk.error.message.includes("limit")) {
+                throw { name: 'LimitError', message: ErrorMessages.LIMIT.daily, code: 40000000 };
+              }
+              throw new Error(chunk.error.message || "Unknown error");
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              // Skip invalid JSON
+              continue;
+            }
+            throw e;
           }
-        } catch (e) {
-          if (e instanceof SyntaxError) {
-            // Skip invalid JSON
-            continue;
-          }
-          throw e;
         }
       }
     }
